@@ -19,15 +19,22 @@ go install github.com/tbuchaillot/open-prs
 
 ## Usage
 ```console
-open-prs -org <org_name> -repository <repository_name> -output <output_type>
+open-prs -org <org_name> -repository <repository_name> -output <output_type> -token <github_token>
 ```
 Where:
+```
   -org string
-        github organization name
+        Github organization name (required)
+  -repository string
+        Github repository name (required)
   -output string
         ouput type (stdout,csv)  (default "stdout")
-  -repository string
-        github repository
+  -token string
+        Github Personal Access Token (PAT) (required for private repos)
+```
+
+### G Personal Access Token
+You can generate a GitHub Personal Access Token (PAT) by following the instructions [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a pull request.

@@ -23,6 +23,7 @@ var (
 	repository = flag.String("repository", "", "github team repository")
 	org        = flag.String("org", "", "github organization name")
 	output     = flag.String("output", "stdout", "ouput type (stdout,csv) ")
+	token      = flag.String("token", "", "github Personal Access Token ( PAT ) (required for private repos)")
 )
 
 func main() {
@@ -32,16 +33,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	getPullRequests(*org, *repository, *output)
+	getPullRequests(*org, *repository, *output, *token)
 }
 
-func getPullRequests(owner, repo, output string) {
+func getPullRequests(owner, repo, output, token string) {
 	baseURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?state=open", owner, repo)
 
 	prDetailsPerContributor := make(map[string]*ContributorPRCount)
 
 	for {
-		pullRequests, nextURL, err := fetchPullRequests(baseURL)
+		pullRequests, nextURL, err := fetchPullRequests(baseURL, token)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 			return
@@ -75,12 +76,26 @@ func getPullRequests(owner, repo, output string) {
 	contributors.Output(output)
 }
 
-func fetchPullRequests(url string) ([]PullRequest, string, error) {
-	resp, err := http.Get(url)
+func fetchPullRequests(url, token string) ([]PullRequest, string, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("error creating request: %w", err)
+	}
+
+	if token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, "", fmt.Errorf("error fetching pull requests: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("error fetching pull requests: %s", resp.Status)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
