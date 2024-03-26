@@ -9,6 +9,7 @@ import (
 )
 
 type ContributorPRCount struct {
+	Repo  string
 	Login string
 	Count int
 	URLs  []string // Add a slice of strings to hold PR URLs
@@ -29,18 +30,32 @@ func (c Contributors) Output(outputType string) {
 	switch outputType {
 	case CSV:
 		// Write to a CSV file
-		file, err := os.Create("output.csv")
-		if err != nil {
-			fmt.Println("Error creating CSV file:", err)
-			return
+		var file *os.File
+		if _, err := os.Stat("output.csv"); os.IsNotExist(err) {
+			file, err = os.Create("output.csv")
+			if err != nil {
+				fmt.Println("Error creating CSV file:", err)
+				return
+			}
+		} else {
+			file, err = os.OpenFile("output.csv", os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				fmt.Println("Error opening CSV file:", err)
+				return
+			}
 		}
 		defer file.Close()
 
 		writer := csv.NewWriter(file)
 		defer writer.Flush()
 
+		titleRow := []string{"\n" + fmt.Sprintf("Open prs for repository: %s", c[0].Repo) + "\n"}
+		if err := writer.Write(titleRow); err != nil {
+			return
+		}
+
 		// Writing the header
-		header := []string{"Username", "PR Count", "URLs"}
+		header := []string{"Repository", "Username", "PR Count", "URLs"}
 		if err := writer.Write(header); err != nil {
 			fmt.Println("Error writing header to CSV file:", err)
 			return
@@ -48,7 +63,7 @@ func (c Contributors) Output(outputType string) {
 
 		// Writing the data
 		for _, contributor := range c {
-			row := []string{contributor.Login, strconv.Itoa(contributor.Count), strings.Join(contributor.URLs, "\n")}
+			row := []string{contributor.Repo, contributor.Login, strconv.Itoa(contributor.Count), strings.Join(contributor.URLs, "\n")}
 			if err := writer.Write(row); err != nil {
 				fmt.Println("Error writing to CSV file:", err)
 				return

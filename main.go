@@ -33,7 +33,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	getPullRequests(*org, *repository, *output, *token)
+	repos := []string{}
+
+	if strings.Contains(*repository, ",") {
+		repos = strings.Split(*repository, ",")
+	} else {
+		repos = append(repos, *repository)
+	}
+
+	for _, repo := range repos {
+		getPullRequests(*org, repo, *output, *token)
+	}
 }
 
 func getPullRequests(owner, repo, output, token string) {
@@ -50,7 +60,7 @@ func getPullRequests(owner, repo, output, token string) {
 
 		for _, pr := range pullRequests {
 			if _, exists := prDetailsPerContributor[pr.User.Login]; !exists {
-				prDetailsPerContributor[pr.User.Login] = &ContributorPRCount{Login: pr.User.Login, URLs: []string{}}
+				prDetailsPerContributor[pr.User.Login] = &ContributorPRCount{Repo: repo, Login: pr.User.Login, URLs: []string{}}
 			}
 			contributor := prDetailsPerContributor[pr.User.Login]
 			contributor.Count++
